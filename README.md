@@ -1,5 +1,7 @@
 # Coupled Ginzburg–Landau Vorticity Framework (Dashboard & Calibration UI)
 
+https://coupled-gl-vorticity-framework-aagsun8rgwpyy55vbivktb.streamlit.app/
+
 This repository contains the interactive scientific dashboard and optimization framework for the **Coupled Ginzburg–Landau Vorticity System**, a reduced-order engineering tool developed to predict boundary-layer transitions in aerodynamics and hemodynamics.
 
 ## 🧬 Overview

@@ -42,7 +42,10 @@ with tab1:
  # ==========================================
  # TAB 2: Calibration, AI & Optimization
  # ==========================================
- with tab2:
+  # ==========================================
+# TAB 2: Calibration, AI & Optimization
+# ==========================================
+with tab2:
     st.header("Data Ingestion & Automated Calibration")
     st.markdown("Upload your experimental database (CSV or Excel) to test, calibrate, and fit the Ginzburg-Landau model to real-world data.")
     
@@ -176,4 +179,4 @@ with tab1:
                 col_opt2.metric("Estimated Fuel Saving", f"{fuel_saving:.1f}%")
                 col_opt3.metric("Surrogate Model Speed", "< 0.1 ms/eval")
                 
-                st.balloons()            
+                st.balloons()                               

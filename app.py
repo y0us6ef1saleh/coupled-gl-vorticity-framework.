@@ -23,33 +23,28 @@ tab1, tab2 = st.tabs(["1. Theoretical Simulation", "2. Automated Calibration (NA
 # ==========================================
 with tab1:
     st.header("Theoretical Amplitude Evolution")
-    
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown("**Mathematical Framework:**")
         st.latex(r"\partial_t A = \gamma A - \beta(\omega)|A|^2 A + \nu_{eff} \Delta A")
         st.latex(r"\beta(\omega) = \beta_0 + \beta_{VS} |\omega|^2")
-        
-        # حساب الحالة المستقرة ديناميكياً
         A_ss = np.sqrt(gamma / beta_0) if beta_0 > 0 else 0.0
         st.success(f"Exact Analytical Steady State: $A_{{ss}} = {A_ss:.3f}$")
 
     with col2:
         model = GLVorticityModel(gamma=gamma, beta_0=beta_0, beta_VS=beta_VS)
         t, A, omega = model.solve()
-        
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=t, y=A, mode='lines', name='Coupled GL Amplitude |A(t)|', line=dict(color='royalblue', width=3)))
         fig.update_layout(title="Amplitude Evolution Over Time", xaxis_title="Dimensionless Time (T)", yaxis_title="Wave Amplitude |A|")
         st.plotly_chart(fig, use_container_width=True)
+
 # ==========================================
 # TAB 2: Calibration & Data Upload
 # ==========================================
 with tab2:
     st.header("Data Ingestion & Automated Calibration")
-    st.markdown("Upload your experimental database (CSV or Excel) to test, calibrate, and fit the Ginzburg-Landau model.")
     
-    # 1. رفع الملف
     uploaded_file = st.file_uploader("Upload Experimental Dataset (CSV / XLSX)", type=['csv', 'xlsx'])
     
     if uploaded_file is not None:
@@ -57,24 +52,26 @@ with tab2:
         st.dataframe(df.head())
         x_data = df.iloc[:, 0].values
         y_data = df.iloc[:, 1].values
+        
+        # --- السر هنا: إذا تم رفع ملف جديد، نقوم بمسح النتائج القديمة ---
+        if 'current_file' not in st.session_state or st.session_state.current_file != uploaded_file.name:
+            st.session_state.calibrated = False
+            st.session_state.current_file = uploaded_file.name
     else:
-        st.info("💡 Showing simulated benchmark dataset (NACA 0012) for demonstration.")
+        st.info("💡 Showing simulated benchmark dataset (NACA 0012) for demonstration. Upload your own to process real data.")
         df = pd.DataFrame({"Chord Position (x/c)": NACA_X, "Measured Transition Amplitude": NACA_AMP})
         st.dataframe(df.head())
         x_data = NACA_X
         y_data = NACA_AMP
-        
+        if 'current_file' in st.session_state and st.session_state.current_file is not None:
+            st.session_state.calibrated = False
+            st.session_state.current_file = None
+
     st.markdown("---")
     
-    # 2. زر المعايرة
-    if 'calibrated' not in st.session_state:
-        st.session_state.calibrated = False
-
     if st.button("Run Automated Optimization"):
         with st.spinner("Calibrating model against data..."):
             b0_cal, bvs_cal, r2 = calibrate_model(x_data, y_data)
-            
-            # حفظ البيانات الجديدة في الذاكرة
             st.session_state.b0_cal = b0_cal
             st.session_state.bvs_cal = bvs_cal
             st.session_state.r2 = r2
@@ -82,14 +79,12 @@ with tab2:
             st.session_state.y_data = y_data
             st.session_state.calibrated = True
 
-    # 3. عرض النتائج
-    if st.session_state.calibrated:
+    if st.session_state.get('calibrated', False):
         c1, c2, c3 = st.columns(3)
         c1.metric("Calibrated β₀", f"{st.session_state.b0_cal:.4f}")
         c2.metric("Calibrated β_VS", f"{st.session_state.bvs_cal:.4f}")
         c3.metric("Model Fitness (R²)", f"{st.session_state.r2*100:.2f}%")
         
-        # استخدام البيانات المحفوظة في الذاكرة للرسم
         x_fit = np.linspace(min(st.session_state.x_data), max(st.session_state.x_data), 100)
         y_fit = np.exp(-st.session_state.b0_cal * x_fit) - st.session_state.bvs_cal * (x_fit**2) + 0.2
         
@@ -99,7 +94,6 @@ with tab2:
         fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
         st.plotly_chart(fig2, use_container_width=True)
         
-        # 4. زر الـ AI
         st.markdown("---")
         st.subheader("🤖 AI-Powered Analysis")
         

@@ -77,7 +77,7 @@ with tab2:
             c3.metric("Model Fitness (R²)", f"{r2*100:.2f}%")
             
             x_fit = np.linspace(min(x_data), max(x_data), 100)
-            y_fit = np.exp(-b0_cal * x_fit) + bvs_cal * (x_fit**2) + 0.2
+            y_fit = np.exp(-b0_cal * x_fit) - bvs_cal * (x_fit**2) + 0.2
             
             fig2 = go.Figure()
             fig2.add_trace(go.Scatter(x=x_data, y=y_data, mode='markers', name='Experimental Data', marker=dict(size=10, color='black')))

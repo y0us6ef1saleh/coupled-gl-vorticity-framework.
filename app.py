@@ -22,7 +22,7 @@ tab1, tab2 = st.tabs(["1. Theoretical Simulation", "2. Automated Calibration (NA
 # TAB 1: Theoretical Simulation
 # ==========================================
 with tab1:
-        st.header("Theoretical Amplitude Evolution")
+    st.header("Theoretical Amplitude Evolution")
     
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -30,11 +30,10 @@ with tab1:
         st.latex(r"\partial_t A = \gamma A - \beta(\omega)|A|^2 A + \nu_{eff} \Delta A")
         st.latex(r"\beta(\omega) = \beta_0 + \beta_{VS} |\omega|^2")
         
-        
+        # حساب الحالة المستقرة ديناميكياً
         A_ss = np.sqrt(gamma / beta_0) if beta_0 > 0 else 0.0
         st.success(f"Exact Analytical Steady State: $A_{{ss}} = {A_ss:.3f}$")
-        
-    
+
     with col2:
         model = GLVorticityModel(gamma=gamma, beta_0=beta_0, beta_VS=beta_VS)
         t, A, omega = model.solve()
@@ -43,7 +42,6 @@ with tab1:
         fig.add_trace(go.Scatter(x=t, y=A, mode='lines', name='Coupled GL Amplitude |A(t)|', line=dict(color='royalblue', width=3)))
         fig.update_layout(title="Amplitude Evolution Over Time", xaxis_title="Dimensionless Time (T)", yaxis_title="Wave Amplitude |A|")
         st.plotly_chart(fig, use_container_width=True)
-
 # ==========================================
 # TAB 2: Calibration & Data Upload
 # ==========================================

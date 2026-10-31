@@ -26,9 +26,21 @@ st.info(
 )
 
 with st.expander("Governing equation", expanded=True):
-    st.latex(
-        r"\\frac{dA}{dt}=\\gamma A-"
-        r"\\left(\\beta_0+\\beta_{VS}|\\omega(t)|^2\\right)A^3+F(t)"
+
+    st.latex(r"""
+    \frac{dA}{dt}
+    =
+    \gamma A
+    -
+    \left(\beta_0+\beta_{VS}|\omega(t)|^2\right)A^3
+    +
+    F(t)
+    """)
+
+    st.write(
+        "The uploaded vorticity history is treated as prescribed input. "
+        "The optimizer estimates the parameters by repeatedly integrating "
+        "this governing ODE and comparing its solution with the measured amplitude."
     )
     st.markdown(
         "The uploaded vorticity history is treated as prescribed input. "

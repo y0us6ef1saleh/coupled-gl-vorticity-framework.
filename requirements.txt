@@ -4,4 +4,4 @@ scipy
 pandas
 plotly
 matplotlib
-anthropic
+openpyxl

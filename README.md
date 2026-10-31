@@ -53,11 +53,11 @@ The dashboard is a reduced-order research prototype. Its calibration results sho
 The reduced-order amplitude model is expressed as:
 
 $$
-\frac{dA}{dt}
+\frac{dA}{dt}$$
 =
-\gamma A
+$$\gamma A$$
 -
-\left(
+$$\left(
 \beta_0+\beta_{VS}|\boldsymbol{\omega}(t)|^2
 \right)A^3
 +

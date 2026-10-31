@@ -66,7 +66,7 @@ with tab2:
         
     st.markdown("---")
     
-    # 2. زر المعايرة (نستخدم session_state لنتذكر النتائج)
+    # 2. زر المعايرة
     if 'calibrated' not in st.session_state:
         st.session_state.calibrated = False
 
@@ -74,21 +74,22 @@ with tab2:
         with st.spinner("Calibrating model against data..."):
             b0_cal, bvs_cal, r2 = calibrate_model(x_data, y_data)
             
-            # تخزين النتائج في الذاكرة
+            # حفظ البيانات الجديدة في الذاكرة
             st.session_state.b0_cal = b0_cal
             st.session_state.bvs_cal = bvs_cal
             st.session_state.r2 = r2
-            st.session_state.calibrated = True
             st.session_state.x_data = x_data
             st.session_state.y_data = y_data
+            st.session_state.calibrated = True
 
-    # 3. عرض النتائج (تظهر فقط إذا تمت المعايرة)
+    # 3. عرض النتائج
     if st.session_state.calibrated:
         c1, c2, c3 = st.columns(3)
         c1.metric("Calibrated β₀", f"{st.session_state.b0_cal:.4f}")
         c2.metric("Calibrated β_VS", f"{st.session_state.bvs_cal:.4f}")
         c3.metric("Model Fitness (R²)", f"{st.session_state.r2*100:.2f}%")
         
+        # استخدام البيانات المحفوظة في الذاكرة للرسم
         x_fit = np.linspace(min(st.session_state.x_data), max(st.session_state.x_data), 100)
         y_fit = np.exp(-st.session_state.b0_cal * x_fit) - st.session_state.bvs_cal * (x_fit**2) + 0.2
         
@@ -98,7 +99,7 @@ with tab2:
         fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
         st.plotly_chart(fig2, use_container_width=True)
         
-        # 4. زر الـ AI (الآن لن يختفي الرسم البياني)
+        # 4. زر الـ AI
         st.markdown("---")
         st.subheader("🤖 AI-Powered Analysis")
         

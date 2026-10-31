@@ -4,7 +4,7 @@ https://coupled-gl-vorticity-framework-aagsun8rgwpyy55vbivktb.streamlit.app/
 
 This repository contains the interactive scientific dashboard and optimization framework for the **Coupled Ginzburg–Landau Vorticity System**, a reduced-order engineering tool developed to predict boundary-layer transitions in aerodynamics and hemodynamics.
 
-## 🧬 Overview
+## \🧬 Overview
 The core framework implements a coupled GL–vorticity system where the Landau coefficient dynamically adapts based on local vorticity magnitude:
 \[
  \beta(\omega) = \beta_0 + \beta_{VS}|\omega|^2 

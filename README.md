@@ -10,8 +10,13 @@ $$\beta(\omega) = \beta_0 + \beta_{VS}|\omega|^2$$
 
 This dashboard bridges the high-performance simulation backend with an automated **Data Ingestion & Calibration Engine**, allowing aerospace engineers and medical researchers to upload empirical databases (e.g., NACA 0012 wind tunnel logs or blood viscosity charts) and automatically calibrate physics-based constants using least-squares curve fitting.
 
-### ⚠️ Note on Deployment
-This Streamlit application is a simple, preliminary prototype designed to demonstrate the user interface and the 0D mathematical coupling. The full 3D WENO5 numerical solver is highly computationally intensive. Therefore, we will integrate the full solver and deploy it using larger-scale computational machines in the future.
+### Note on Deployment Architecture
+
+This repository contains two components:
+1. **The Interactive Dashboard (Streamlit):** A lightweight, web-based 0D prototype (running on free cloud infrastructure) designed to demonstrate the user interface, real-time parameter coupling, and automated data calibration.
+2. **The Full HPC Backend:** The complete 3D WENO5 numerical solver (available in the repository's `hpc_solver/` directory). 
+
+Due to the extreme computational intensity (RAM and CPU requirements) of 3D fluid dynamics simulations, the full 3D solver cannot be hosted on a standard Streamlit Community Cloud instance. The HPC version is designed to be executed on university-grade clusters or GPU-accelerated machines. Future work will focus on connecting the Streamlit UI to cloud-based HPC instances for remote execution.
 
 ## 🚀 Features
 - **Theoretical Simulation Panel:** Real-time generation of Tollmien–Schlichting wave amplitude profiles and exact analytical benchmarks.

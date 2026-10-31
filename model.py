@@ -27,10 +27,11 @@ NACA_AMP = np.array([1.25, 1.15, 1.10, 1.05, 0.95, 0.85, 0.75, 0.65, 0.55, 0.48]
 def calibrate_model(x_data, y_data):
     def residuals(params):
         beta_0, beta_VS = params
-        predicted = np.exp(-beta_0 * x_data) + beta_VS * (x_data**2) + 0.2
+        # التعديل هنا: استخدمنا (-) بدلاً من (+) لكي يساهم beta_VS في عملية الانخفاض
+        predicted = np.exp(-beta_0 * x_data) - beta_VS * (x_data**2) + 0.2
         return predicted - y_data
 
-    initial_guess = [1.0, 1.0]
+    initial_guess = [1.0, 0.1]
     bounds = ([0.0, 0.0], [10.0, 5.0]) 
     
     result = least_squares(residuals, initial_guess, bounds=bounds)

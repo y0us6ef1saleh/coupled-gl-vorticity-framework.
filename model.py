@@ -119,7 +119,7 @@ class CoupledGLVModel:
             raise RuntimeError(f"ODE integration failed: {solution.message}")
         return solution.y[0]
 
-
+    
     def calibrate(
         self,
         observed_amplitude: Sequence[float],
@@ -204,6 +204,36 @@ class CoupledGLVModel:
 
             except (RuntimeError, ValueError, FloatingPointError):
                 return np.full_like(observed, 1e12, dtype=float)
+
+        fit = least_squares(
+            residual_function,
+            x0=x0,
+            bounds=(lb, ub),
+            method="trf",
+            max_nfev=max_nfev,
+            x_scale="jac",
+        )
+
+        fitted_parameters = unpack(fit.x)
+        fitted_parameters.validate()
+
+        predicted = self.simulate(
+            y0,
+            parameters=fitted_parameters,
+            evaluation_times=self.time
+        )
+
+        residuals = predicted - observed
+
+        rmse = float(np.sqrt(np.mean(residuals**2)))
+
+        ss_res = float(np.sum(residuals**2))
+        ss_tot = float(np.sum((observed - np.mean(observed))**2))
+
+        r_squared = (
+            float(1.0 - ss_res / ss_tot)
+            if ss_tot > 0 else float("nan")
+        )
 
         return CalibrationResult(
             parameters=fitted_parameters,

@@ -119,6 +119,7 @@ class CoupledGLVModel:
             raise RuntimeError(f"ODE integration failed: {solution.message}")
         return solution.y[0]
 
+
     def calibrate(
         self,
         observed_amplitude: Sequence[float],
@@ -127,7 +128,7 @@ class CoupledGLVModel:
         upper_bounds: Sequence[float] = (np.inf, np.inf, np.inf),
         max_nfev: int = 500,
         fit_vorticity_coupling: bool = True,
-        ) -> CalibrationResult:
+    ) -> CalibrationResult:
 
         observed = np.asarray(observed_amplitude, dtype=float)
 
@@ -139,118 +140,70 @@ class CoupledGLVModel:
 
         y0 = float(observed[0])
 
+        lb_all = np.asarray(lower_bounds, dtype=float)
+        ub_all = np.asarray(upper_bounds, dtype=float)
+
+        if lb_all.shape != (3,) or ub_all.shape != (3,):
+            raise ValueError("Parameter bounds must contain exactly three values.")
+
+        if np.any(lb_all >= ub_all):
+            raise ValueError("Each lower bound must be smaller than its upper bound.")
+
         if fit_vorticity_coupling:
-            # Full model: optimize all three parameters
             x0 = np.asarray([
                 initial_guess.gamma,
                 initial_guess.beta_0,
                 initial_guess.beta_VS
             ])
 
-        lb = np.asarray(lower_bounds, dtype=float)
-        ub = np.asarray(upper_bounds, dtype=float)
+            lb = lb_all
+            ub = ub_all
 
-        def unpack(x):
-            return GLVParameters(*map(float, x))
+            def unpack(x):
+                return GLVParameters(
+                    gamma=float(x[0]),
+                    beta_0=float(x[1]),
+                    beta_VS=float(x[2])
+                )
 
-    else:
-        # Baseline model: beta_VS is fixed exactly at zero
-        x0 = np.asarray([
-            initial_guess.gamma,
-            initial_guess.beta_0
-        ])
+        else:
+            x0 = np.asarray([
+                initial_guess.gamma,
+                initial_guess.beta_0
+            ])
 
-        lb = np.asarray(lower_bounds[:2], dtype=float)
-        ub = np.asarray(upper_bounds[:2], dtype=float)
+            lb = lb_all[:2]
+            ub = ub_all[:2]
 
-        def unpack(x):
-            return GLVParameters(
-                gamma=float(x[0]),
-                beta_0=float(x[1]),
-                beta_VS=0.0
-            )
+            def unpack(x):
+                return GLVParameters(
+                    gamma=float(x[0]),
+                    beta_0=float(x[1]),
+                    beta_VS=0.0
+                )
 
-    if np.any(x0 < lb) or np.any(x0 > ub):
-        raise ValueError("Initial guess must lie inside parameter bounds.")
+        if np.any(x0 < lb) or np.any(x0 > ub):
+            raise ValueError("Initial guess must lie inside parameter bounds.")
 
-    def residual_function(x):
-        p = unpack(x)
+        def residual_function(x):
+            p = unpack(x)
 
-        try:
-            prediction = self.simulate(
-                y0,
-                parameters=p,
-                evaluation_times=self.time
-            )
+            try:
+                prediction = self.simulate(
+                    y0,
+                    parameters=p,
+                    evaluation_times=self.time
+                )
 
-            residual = prediction - observed
+                residual = prediction - observed
 
-            if not np.all(np.isfinite(residual)):
-                raise FloatingPointError
+                if not np.all(np.isfinite(residual)):
+                    raise FloatingPointError
 
-            return residual
+                return residual
 
-        except (RuntimeError, ValueError, FloatingPointError):
-            return np.full_like(observed, 1e12, dtype=float)
-
-    fit = least_squares(
-        residual_function,
-        x0=x0,
-        bounds=(lb, ub),
-        method="trf",
-        max_nfev=max_nfev,
-        x_scale="jac",
-    )
-
-    fitted_parameters = unpack(fit.x)
-
-    predicted = self.simulate(
-        y0,
-        parameters=fitted_parameters,
-        evaluation_times=self.time
-    )
-
-    residuals = predicted - observed
-
-    rmse = float(np.sqrt(np.mean(residuals**2)))
-
-    ss_res = float(np.sum(residuals**2))
-    ss_tot = float(np.sum((observed - np.mean(observed))**2))
-
-    r_squared = (
-        float(1.0 - ss_res / ss_tot)
-        if ss_tot > 0 else float("nan")
-    )
-
-    return CalibrationResult(
-        parameters=fitted_parameters,
-        success=bool(fit.success),
-        message=str(fit.message),
-        cost=float(fit.cost),
-        rmse=rmse,
-        r_squared=r_squared,
-        predicted_amplitude=predicted,
-        residuals=residuals,
-    )
-
-        fit = least_squares(
-            residual_function,
-            x0=x0,
-            bounds=(lb, ub),
-            method="trf",
-            max_nfev=max_nfev,
-            x_scale="jac",
-        )
-
-        fitted_parameters = GLVParameters(*map(float, fit.x))
-        fitted_parameters.validate()
-        predicted = self.simulate(y0, parameters=fitted_parameters, evaluation_times=self.time)
-        residuals = predicted - observed
-
-        rmse = float(np.sqrt(np.mean(residuals**2)))
-        ss_res = float(np.sum(residuals**2))
-        ss_tot = float(np.sum((observed - np.mean(observed))**2))
-        r_squared = float(1.0 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
+            except (RuntimeError, ValueError, FloatingPointError):
+                return np.full_like(observed, 1e12, dtype=float)
 
         return CalibrationResult(
             parameters=fitted_parameters,
@@ -262,7 +215,6 @@ class CoupledGLVModel:
             predicted_amplitude=predicted,
             residuals=residuals,
         )
-
 
 def load_experiment_csv(path: str | Path) -> pd.DataFrame:
     """Load and validate a CSV with time, amplitude and vorticity columns."""

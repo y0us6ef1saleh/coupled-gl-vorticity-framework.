@@ -47,9 +47,9 @@ with tab1:
 # ==========================================
 with tab2:
     st.header("Data Ingestion & Automated Calibration")
-    st.markdown("Upload your experimental database (CSV or Excel) to test, calibrate, and fit the Ginzburg-Landau model to real-world data.")
+    st.markdown("Upload your experimental database (CSV or Excel) to test, calibrate, and fit the Ginzburg-Landau model.")
     
-    # Upload Section
+    # 1. رفع الملف
     uploaded_file = st.file_uploader("Upload Experimental Dataset (CSV / XLSX)", type=['csv', 'xlsx'])
     
     if uploaded_file is not None:
@@ -58,7 +58,7 @@ with tab2:
         x_data = df.iloc[:, 0].values
         y_data = df.iloc[:, 1].values
     else:
-        st.info("💡 Showing simulated benchmark dataset (NACA 0012) for demonstration. Upload your own to process real data.")
+        st.info("💡 Showing simulated benchmark dataset (NACA 0012) for demonstration.")
         df = pd.DataFrame({"Chord Position (x/c)": NACA_X, "Measured Transition Amplitude": NACA_AMP})
         st.dataframe(df.head())
         x_data = NACA_X
@@ -66,45 +66,58 @@ with tab2:
         
     st.markdown("---")
     
-    # Optimization Section
+    # 2. زر المعايرة (نستخدم session_state لنتذكر النتائج)
+    if 'calibrated' not in st.session_state:
+        st.session_state.calibrated = False
+
     if st.button("Run Automated Optimization"):
         with st.spinner("Calibrating model against data..."):
             b0_cal, bvs_cal, r2 = calibrate_model(x_data, y_data)
             
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Calibrated β₀", f"{b0_cal:.4f}")
-            c2.metric("Calibrated β_VS", f"{bvs_cal:.4f}")
-            c3.metric("Model Fitness (R²)", f"{r2*100:.2f}%")
-            
-            x_fit = np.linspace(min(x_data), max(x_data), 100)
-            y_fit = np.exp(-b0_cal * x_fit) - bvs_cal * (x_fit**2) + 0.2
-            
-            fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(x=x_data, y=y_data, mode='markers', name='Experimental Data', marker=dict(size=10, color='black')))
-            fig2.add_trace(go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Calibrated Model', line=dict(color='teal', width=3)))
-            fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
-            st.plotly_chart(fig2, use_container_width=True)
-            
-            # AI Analysis Section
-            st.markdown("---")
-            st.subheader("🤖 AI-Powered Analysis")
-            
-            if st.button("Explain Results with AI"):
-                with st.spinner("Claude is analyzing the physics..."):
-                    prompt = f"You are a fluid dynamics expert. A Ginzburg-Landau model was calibrated against data. Results: R^2: {r2*100:.2f}%, beta_0: {b0_cal:.4f}, beta_VS: {bvs_cal:.4f}. Write a brief, 3-sentence academic analysis explaining these results."
-                    try:
-                        api_key = st.secrets.get("ANTHROPIC_API_KEY")
-                        if api_key:
-                            client = anthropic.Anthropic(api_key=api_key)
-                            response = client.messages.create(
-                                model="claude-3-haiku-20240307",
-                                max_tokens=200,
-                                messages=[{"role": "user", "content": prompt}]
-                            )
-                            ai_response = response.content[0].text
-                        else:
-                            raise ValueError("No API key")
-                    except Exception as e:
-                        ai_response = f"**Simulated Expert Analysis:** The model achieved an R-squared of **{r2*100:.2f}%**. The calibrated vortex stretching coefficient (β_VS) is **{bvs_cal:.4f}**."
-                    
-                    st.info(ai_response)
+            # تخزين النتائج في الذاكرة
+            st.session_state.b0_cal = b0_cal
+            st.session_state.bvs_cal = bvs_cal
+            st.session_state.r2 = r2
+            st.session_state.calibrated = True
+            st.session_state.x_data = x_data
+            st.session_state.y_data = y_data
+
+    # 3. عرض النتائج (تظهر فقط إذا تمت المعايرة)
+    if st.session_state.calibrated:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Calibrated β₀", f"{st.session_state.b0_cal:.4f}")
+        c2.metric("Calibrated β_VS", f"{st.session_state.bvs_cal:.4f}")
+        c3.metric("Model Fitness (R²)", f"{st.session_state.r2*100:.2f}%")
+        
+        x_fit = np.linspace(min(st.session_state.x_data), max(st.session_state.x_data), 100)
+        y_fit = np.exp(-st.session_state.b0_cal * x_fit) - st.session_state.bvs_cal * (x_fit**2) + 0.2
+        
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(x=st.session_state.x_data, y=st.session_state.y_data, mode='markers', name='Experimental Data', marker=dict(size=10, color='black')))
+        fig2.add_trace(go.Scatter(x=x_fit, y=y_fit, mode='lines', name='Calibrated Model', line=dict(color='teal', width=3)))
+        fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # 4. زر الـ AI (الآن لن يختفي الرسم البياني)
+        st.markdown("---")
+        st.subheader("🤖 AI-Powered Analysis")
+        
+        if st.button("Explain Results with AI"):
+            with st.spinner("Claude is analyzing the physics..."):
+                prompt = f"You are a fluid dynamics expert. A Ginzburg-Landau model was calibrated against data. Results: R^2: {st.session_state.r2*100:.2f}%, beta_0: {st.session_state.b0_cal:.4f}, beta_VS: {st.session_state.bvs_cal:.4f}. Write a brief, 3-sentence academic analysis explaining these results."
+                try:
+                    api_key = st.secrets.get("ANTHROPIC_API_KEY")
+                    if api_key:
+                        client = anthropic.Anthropic(api_key=api_key)
+                        response = client.messages.create(
+                            model="claude-3-haiku-20240307",
+                            max_tokens=200,
+                            messages=[{"role": "user", "content": prompt}]
+                        )
+                        ai_response = response.content[0].text
+                    else:
+                        raise ValueError("No API key")
+                except Exception as e:
+                    ai_response = f"**Simulated Expert Analysis:** The model achieved an R-squared of **{st.session_state.r2*100:.2f}%**. The calibrated vortex stretching coefficient (β_VS) is **{st.session_state.bvs_cal:.4f}**."
+                
+                st.info(ai_response)

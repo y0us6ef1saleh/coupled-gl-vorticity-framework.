@@ -55,13 +55,67 @@ uploaded_file = st.file_uploader(
 )
 
 with st.sidebar:
-    st.header("Initial parameter estimates")
-    gamma_guess = st.number_input("gamma", value=0.5, format="%.6f")
-    beta0_guess = st.number_input("beta_0", min_value=1e-12, value=1.0, format="%.6f")
-    beta_vs_guess = st.number_input("beta_VS", min_value=0.0, value=0.1, format="%.6f")
-    max_nfev = st.number_input("Maximum optimizer evaluations", min_value=50, max_value=5000, value=500, step=50)
-    run_button = st.button("Calibrate model", type="primary", use_container_width=True)
 
+    st.header("Model Configuration")
+
+    model_mode = st.radio(
+        "Select model",
+        [
+            "Full Coupled Model",
+            "Baseline Model (No Vorticity Coupling)"
+        ]
+    )
+
+    fit_coupling = model_mode == "Full Coupled Model"
+
+    st.divider()
+
+    st.header("Initial parameter estimates")
+
+    gamma_guess = st.number_input(
+        "gamma",
+        value=0.6,
+        format="%.6f"
+    )
+
+    beta0_guess = st.number_input(
+        "beta_0",
+        min_value=1e-12,
+        value=1.1,
+        format="%.6f"
+    )
+
+    if fit_coupling:
+
+        beta_vs_guess = st.number_input(
+            "beta_VS",
+            min_value=0.0,
+            value=0.11,
+            format="%.6f"
+        )
+
+    else:
+
+        beta_vs_guess = 0.0
+
+        st.metric(
+            "beta_VS (Fixed)",
+            "0.000000"
+        )
+
+    max_nfev = st.number_input(
+        "Maximum optimizer evaluations",
+        min_value=50,
+        max_value=10000,
+        value=2000,
+        step=50
+    )
+
+    run_button = st.button(
+        "Calibrate model",
+        type="primary",
+        use_container_width=True
+    )
 if uploaded_file is None:
     st.warning("Upload a CSV or Excel file to begin. The file must contain time, amplitude and vorticity columns.")
     st.stop()
@@ -141,9 +195,17 @@ if run_button:
                 observed_amplitude=data["amplitude"].to_numpy(),
                 initial_guess=initial,
                 max_nfev=int(max_nfev),
-            )
+                fit_vorticity_coupling=fit_coupling,
+             )
 
         st.subheader("Calibration results")
+        st.write("Selected model:", model_mode)
+
+        if not fit_coupling:
+            st.success(
+                "Baseline Model: beta_VS is fixed exactly at zero "
+                "and excluded from optimization."
+            )
         c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("gamma", f"{result.parameters.gamma:.6g}")
         c2.metric("beta_0", f"{result.parameters.beta_0:.6g}")

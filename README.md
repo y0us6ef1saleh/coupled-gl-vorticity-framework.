@@ -19,6 +19,8 @@ This Streamlit application is a simple, preliminary prototype designed to demons
 - **Automated AI Optimization Engine:** Dynamic parameter mapping and automated calculation of residuals and training errors against experimental validation criteria (<5% target error).
 - **Multi-Domain Support:** Pre-configured environments for Aerodynamic airfoils and Hemodynamic blood flow analysis.
 
+The application features an integrated AI module to analyze the physical implications of the calibration results. It is designed with a secure fallback mechanism for environments without active API keys.
+
 ## 🛠️ Tech Stack
 - **Frontend & UI:** Streamlit (Python)
 - **Mathematical Processing:** NumPy, SciPy (Optimization & Curve Fitting)

@@ -120,32 +120,32 @@ class CoupledGLVModel:
         return solution.y[0]
 
     def calibrate(
-    self,
-    observed_amplitude: Sequence[float],
-    initial_guess: GLVParameters = GLVParameters(0.5, 1.0, 0.1),
-    lower_bounds: Sequence[float] = (0.0, 1e-12, 0.0),
-    upper_bounds: Sequence[float] = (np.inf, np.inf, np.inf),
-    max_nfev: int = 500,
-    fit_vorticity_coupling: bool = True,
-) -> CalibrationResult:
+        self,
+        observed_amplitude: Sequence[float],
+        initial_guess: GLVParameters = GLVParameters(0.5, 1.0, 0.1),
+        lower_bounds: Sequence[float] = (0.0, 1e-12, 0.0),
+        upper_bounds: Sequence[float] = (np.inf, np.inf, np.inf),
+        max_nfev: int = 500,
+        fit_vorticity_coupling: bool = True,
+        ) -> CalibrationResult:
 
-    observed = np.asarray(observed_amplitude, dtype=float)
+        observed = np.asarray(observed_amplitude, dtype=float)
 
-    if observed.shape != self.time.shape:
-        raise ValueError("observed_amplitude must have the same length as time.")
+        if observed.shape != self.time.shape:
+            raise ValueError("observed_amplitude must have the same length as time.")
 
-    if not np.all(np.isfinite(observed)):
-        raise ValueError("observed_amplitude must contain finite values.")
+        if not np.all(np.isfinite(observed)):
+            raise ValueError("observed_amplitude must contain finite values.")
 
-    y0 = float(observed[0])
+        y0 = float(observed[0])
 
-    if fit_vorticity_coupling:
+        if fit_vorticity_coupling:
         # Full model: optimize all three parameters
-        x0 = np.asarray([
-            initial_guess.gamma,
-            initial_guess.beta_0,
-            initial_guess.beta_VS
-        ])
+            x0 = np.asarray([
+                initial_guess.gamma,
+                initial_guess.beta_0,
+                initial_guess.beta_VS
+            ])
 
         lb = np.asarray(lower_bounds, dtype=float)
         ub = np.asarray(upper_bounds, dtype=float)

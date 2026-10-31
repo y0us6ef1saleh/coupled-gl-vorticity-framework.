@@ -130,17 +130,22 @@ with tab2:
         
         if st.button("Run Design Optimization (Sweep 1000 Wings)"):
             with st.spinner("Simulating 1000 aerodynamic designs..."):
-                best_wing_id = 0
+                                best_wing_id = 0
                 best_x_tr = 0
-                base_x_tr = 0.45 # Transition point for a baseline wing
+                base_x_tr = 0.45
                 
-                # حلقة التكرار لمحاكاة 1000 تصميم
+                # هنا يكمن السحر: التصميم الأمثل يعتمد الآن على نتيجة المعايرة (b0_cal)
+                # كلما تغيرت البيانات التي ترفعها، سيتغير هذا الرقم تلقائياً
+                optimal_design_param = 0.8 - (0.3 * st.session_state.b0_cal)
+                optimal_design_param = min(max(optimal_design_param, 0.1), 0.9)
+                
                 for wing_id in range(1, 1001):
-                    # محاكاة تغيير معامل النمو (gamma) بناءً على تصميم الجناح
-                    simulated_gamma = gamma * (0.8 + 0.4 * np.random.rand())
+                    # تحويل رقم الجناح إلى معامل هندسي (من 0.001 إلى 1.000)
+                    design_param = wing_id / 1000.0
                     
-                    # حساب موقع الانتقال بناءً على النموذج المعاير
-                    x_tr = 0.2 + (simulated_gamma / st.session_state.b0_cal) * 0.5
+                    # معادلة القطع المكافئ (Parabolic Trade-off)
+                    # تحاكي الانخفاض في الكفاءة كلما ابتعدنا عن التصميم الأمثل
+                    x_tr = 0.85 - 0.5 * ((design_param - optimal_design_param) ** 2)
                     
                     if x_tr > best_x_tr:
                         best_x_tr = x_tr

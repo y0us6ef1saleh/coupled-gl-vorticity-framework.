@@ -140,7 +140,7 @@ class CoupledGLVModel:
         y0 = float(observed[0])
 
         if fit_vorticity_coupling:
-        # Full model: optimize all three parameters
+            # Full model: optimize all three parameters
             x0 = np.asarray([
                 initial_guess.gamma,
                 initial_guess.beta_0,

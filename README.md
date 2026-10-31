@@ -4,13 +4,14 @@ https://coupled-gl-vorticity-framework-aagsun8rgwpyy55vbivktb.streamlit.app/
 
 This repository contains the interactive scientific dashboard and optimization framework for the **Coupled Ginzburg–Landau Vorticity System**, a reduced-order engineering tool developed to predict boundary-layer transitions in aerodynamics and hemodynamics.
 
-## \🧬 Overview
-The core framework implements a coupled GL–vorticity system where the Landau coefficient dynamically adapts based on local vorticity magnitude:
-\[
- \beta(\omega) = \beta_0 + \beta_{VS}|\omega|^2 
-\]
+## 🧬 Overview
 
-This dashboard bridges the theoretical mathematical framework with an automated **Data Ingestion & Calibration Engine**, allowing aerospace engineers and medical researchers to upload empirical databases (e.g., NACA 0012 wind tunnel logs or blood viscosity charts) and automatically calibrate physics-based constants using least-squares curve fitting.
+The core framework implements a coupled GL–vorticity system where the Landau coefficient dynamically adapts based on local vorticity magnitude:
+
+$$ \beta(\omega) = \beta_0 + \beta_{VS}|\omega|^2 $$
+
+This dashboard bridges the theoretical mathematical framework with an automated Data Ingestion & Calibration Engine, allowing aerospace engineers and medical researchers to upload empirical databases (e.g., NACA 0012 wind tunnel logs or blood viscosity charts) and automatically calibrate physics-based constants using least-squares curve fitting.
+mathematical framework with an automated **Data Ingestion & Calibration Engine**, allowing aerospace engineers and medical researchers to upload empirical databases (e.g., NACA 0012 wind tunnel logs or blood viscosity charts) and automatically calibrate physics-based constants using least-squares curve fitting.
 
 ### ⚠️ Note on Deployment Architecture & Intellectual Property
 

@@ -55,7 +55,6 @@ with tab2:
         x_data = df.iloc[:, 0].values
         y_data = df.iloc[:, 1].values
         
-        # مسح النتائج القديمة إذا تم رفع ملف جديد
         if 'current_file' not in st.session_state or st.session_state.current_file != uploaded_file.name:
             st.session_state.calibrated = False
             st.session_state.current_file = uploaded_file.name
@@ -83,7 +82,7 @@ with tab2:
             st.session_state.y_data = y_data
             st.session_state.calibrated = True
 
-    # 3. عرض النتائج (تظهر فقط بعد المعايرة)
+    # 3. عرض النتائج
     if st.session_state.get('calibrated', False):
         c1, c2, c3 = st.columns(3)
         c1.metric("Calibrated β₀", f"{st.session_state.b0_cal:.4f}")
@@ -99,7 +98,7 @@ with tab2:
         fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
         st.plotly_chart(fig2, use_container_width=True)
         
-        # 4. قسم الذكاء الاصطناعي (AI)
+        # 4. قسم الذكاء الاصطناعي
         st.markdown("---")
         st.subheader("🤖 AI-Powered Analysis")
         
@@ -123,39 +122,33 @@ with tab2:
                 
                 st.info(ai_response)
 
-        # 5. محرك التحسين الهندسي (Optimization Engine)
+        # 5. محرك التحسين الهندسي (معادلة ديناميكية تعتمد على البيانات)
         st.markdown("---")
         st.subheader("✈️ Multi-Disciplinary Optimization Engine")
         st.markdown("Sweep 1000 wing designs using the calibrated surrogate model to maximize laminar flow and save fuel.")
         
         if st.button("Run Design Optimization (Sweep 1000 Wings)"):
             with st.spinner("Simulating 1000 aerodynamic designs..."):
-                                best_wing_id = 0
+                best_wing_id = 0
                 best_x_tr = 0
                 base_x_tr = 0.45
                 
-                # هنا يكمن السحر: التصميم الأمثل يعتمد الآن على نتيجة المعايرة (b0_cal)
-                # كلما تغيرت البيانات التي ترفعها، سيتغير هذا الرقم تلقائياً
+                # التصميم الأمثل يعتمد الآن ديناميكياً على نتيجة المعايرة (b0_cal)
                 optimal_design_param = 0.8 - (0.3 * st.session_state.b0_cal)
                 optimal_design_param = min(max(optimal_design_param, 0.1), 0.9)
                 
                 for wing_id in range(1, 1001):
-                    # تحويل رقم الجناح إلى معامل هندسي (من 0.001 إلى 1.000)
                     design_param = wing_id / 1000.0
-                    
-                    # معادلة القطع المكافئ (Parabolic Trade-off)
-                    # تحاكي الانخفاض في الكفاءة كلما ابتعدنا عن التصميم الأمثل
                     x_tr = 0.85 - 0.5 * ((design_param - optimal_design_param) ** 2)
                     
                     if x_tr > best_x_tr:
                         best_x_tr = x_tr
                         best_wing_id = wing_id
                 
-                # حساب توفير الوقود التقريبي
                 fuel_saving = (best_x_tr - base_x_tr) * 100 * 0.2
-                if fuel_saving < 0: fuel_saving = 0 
+                if fuel_saving < 0: 
+                    fuel_saving = 0 
                 
-                # عرض النتائج
                 st.success(f"🎯 **Optimal Design Found: Wing #{best_wing_id}**")
                 
                 col_opt1, col_opt2, col_opt3 = st.columns(3)
@@ -163,4 +156,4 @@ with tab2:
                 col_opt2.metric("Estimated Fuel Saving", f"{fuel_saving:.1f}%")
                 col_opt3.metric("Surrogate Model Speed", "< 0.1 ms/eval")
                 
-                st.balloons() 
+                st.balloons()       

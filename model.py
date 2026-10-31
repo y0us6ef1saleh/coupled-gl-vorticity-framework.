@@ -119,36 +119,119 @@ class CoupledGLVModel:
             raise RuntimeError(f"ODE integration failed: {solution.message}")
         return solution.y[0]
 
-    def calibrate( self, observed_amplitude: Sequence[float], initial_guess: GLVParameters = GLVParameters(0.5, 1.0, 0.1), lower_bounds: Sequence[float] = (0.0, 1e-12, 0.0), upper_bounds: Sequence[float] = (np.inf, np.inf, np.inf), max_nfev: int = 500, ) -> CalibrationResult:
-        """ Estimate gamma, beta_0 and beta_VS by fitting solutions of the ODE. Each optimizer evaluation integrates the governing equation. The objective is therefore based on the model solution, not an unrelated empirical fitting curve. """
-        observed = np.asarray(observed_amplitude, dtype=float)
-        if observed.shape != self.time.shape:
-            raise ValueError("observed_amplitude must have the same length as time.")
-        if not np.all(np.isfinite(observed)):
-            raise ValueError("observed_amplitude must contain finite values.")
+    def calibrate(
+    self,
+    observed_amplitude: Sequence[float],
+    initial_guess: GLVParameters = GLVParameters(0.5, 1.0, 0.1),
+    lower_bounds: Sequence[float] = (0.0, 1e-12, 0.0),
+    upper_bounds: Sequence[float] = (np.inf, np.inf, np.inf),
+    max_nfev: int = 500,
+    fit_vorticity_coupling: bool = True,
+) -> CalibrationResult:
 
-        y0 = float(observed[0])
-        x0 = np.asarray(
-            [initial_guess.gamma, initial_guess.beta_0, initial_guess.beta_VS],
-            dtype=float,
-        )
+    observed = np.asarray(observed_amplitude, dtype=float)
+
+    if observed.shape != self.time.shape:
+        raise ValueError("observed_amplitude must have the same length as time.")
+
+    if not np.all(np.isfinite(observed)):
+        raise ValueError("observed_amplitude must contain finite values.")
+
+    y0 = float(observed[0])
+
+    if fit_vorticity_coupling:
+        # Full model: optimize all three parameters
+        x0 = np.asarray([
+            initial_guess.gamma,
+            initial_guess.beta_0,
+            initial_guess.beta_VS
+        ])
+
         lb = np.asarray(lower_bounds, dtype=float)
         ub = np.asarray(upper_bounds, dtype=float)
 
-        if np.any(x0 < lb) or np.any(x0 > ub):
-            raise ValueError("Initial guess must lie inside the parameter bounds.")
+        def unpack(x):
+            return GLVParameters(*map(float, x))
 
-        def residual_function(x: Array) -> Array:
-            p = GLVParameters(*map(float, x))
-            try:
-                prediction = self.simulate(y0, parameters=p, evaluation_times=self.time)
-                residual = prediction - observed
-                if not np.all(np.isfinite(residual)):
-                    raise FloatingPointError
-                return residual
-            except (RuntimeError, ValueError, FloatingPointError):
-                # Large finite residual keeps the least-squares optimizer alive.
-                return np.full_like(observed, 1e12, dtype=float)
+    else:
+        # Baseline model: beta_VS is fixed exactly at zero
+        x0 = np.asarray([
+            initial_guess.gamma,
+            initial_guess.beta_0
+        ])
+
+        lb = np.asarray(lower_bounds[:2], dtype=float)
+        ub = np.asarray(upper_bounds[:2], dtype=float)
+
+        def unpack(x):
+            return GLVParameters(
+                gamma=float(x[0]),
+                beta_0=float(x[1]),
+                beta_VS=0.0
+            )
+
+    if np.any(x0 < lb) or np.any(x0 > ub):
+        raise ValueError("Initial guess must lie inside parameter bounds.")
+
+    def residual_function(x):
+        p = unpack(x)
+
+        try:
+            prediction = self.simulate(
+                y0,
+                parameters=p,
+                evaluation_times=self.time
+            )
+
+            residual = prediction - observed
+
+            if not np.all(np.isfinite(residual)):
+                raise FloatingPointError
+
+            return residual
+
+        except (RuntimeError, ValueError, FloatingPointError):
+            return np.full_like(observed, 1e12, dtype=float)
+
+    fit = least_squares(
+        residual_function,
+        x0=x0,
+        bounds=(lb, ub),
+        method="trf",
+        max_nfev=max_nfev,
+        x_scale="jac",
+    )
+
+    fitted_parameters = unpack(fit.x)
+
+    predicted = self.simulate(
+        y0,
+        parameters=fitted_parameters,
+        evaluation_times=self.time
+    )
+
+    residuals = predicted - observed
+
+    rmse = float(np.sqrt(np.mean(residuals**2)))
+
+    ss_res = float(np.sum(residuals**2))
+    ss_tot = float(np.sum((observed - np.mean(observed))**2))
+
+    r_squared = (
+        float(1.0 - ss_res / ss_tot)
+        if ss_tot > 0 else float("nan")
+    )
+
+    return CalibrationResult(
+        parameters=fitted_parameters,
+        success=bool(fit.success),
+        message=str(fit.message),
+        cost=float(fit.cost),
+        rmse=rmse,
+        r_squared=r_squared,
+        predicted_amplitude=predicted,
+        residuals=residuals,
+    )
 
         fit = least_squares(
             residual_function,

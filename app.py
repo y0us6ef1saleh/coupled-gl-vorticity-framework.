@@ -39,13 +39,10 @@ with tab1:
         fig.update_layout(title="Amplitude Evolution Over Time", xaxis_title="Dimensionless Time (T)", yaxis_title="Wave Amplitude |A|")
         st.plotly_chart(fig, use_container_width=True)
 
-# ==========================================
-# TAB 2: Calibration & Data Upload
-# ==========================================
-# ==========================================
-# TAB 2: Calibration, AI & Optimization
-# ==========================================
-with tab2:
+ # ==========================================
+ # TAB 2: Calibration, AI & Optimization
+ # ==========================================
+ with tab2:
     st.header("Data Ingestion & Automated Calibration")
     st.markdown("Upload your experimental database (CSV or Excel) to test, calibrate, and fit the Ginzburg-Landau model to real-world data.")
     
@@ -58,7 +55,6 @@ with tab2:
         x_data = df.iloc[:, 0].values
         y_data = df.iloc[:, 1].values
         
-        # مسح النتائج القديمة إذا تم رفع ملف جديد
         if 'current_file' not in st.session_state or st.session_state.current_file != uploaded_file.name:
             st.session_state.calibrated = False
             st.session_state.current_file = uploaded_file.name
@@ -86,7 +82,7 @@ with tab2:
             st.session_state.y_data = y_data
             st.session_state.calibrated = True
 
-    # 3. عرض النتائج (تظهر فقط بعد المعايرة)
+    # 3. عرض النتائج
     if st.session_state.get('calibrated', False):
         c1, c2, c3 = st.columns(3)
         c1.metric("Calibrated β₀", f"{st.session_state.b0_cal:.4f}")
@@ -102,7 +98,7 @@ with tab2:
         fig2.update_layout(title="Dynamic Calibration Curve", xaxis_title="Chord Position (x/c)", yaxis_title="Amplitude")
         st.plotly_chart(fig2, use_container_width=True)
         
-        # 4. قسم الذكاء الاصطناعي (AI)
+        # 4. قسم الذكاء الاصطناعي
         st.markdown("---")
         st.subheader("🤖 AI-Powered Analysis")
         
@@ -126,40 +122,52 @@ with tab2:
                 
                 st.info(ai_response)
 
-        # 5. محرك التحسين الهندسي (الفيزيائي)
+        # 5. محرك التحسين الهندسي (يعتمد على حل المعادلات الحقيقي)
         st.markdown("---")
         st.subheader("✈️ Multi-Disciplinary Optimization Engine")
-        st.markdown("Sweep 1000 wing designs using the calibrated surrogate model to maximize laminar flow and save fuel.")
+        st.markdown("Sweep 1000 wing designs by physically solving the GL ODE for varying pressure gradients.")
         
         if st.button("Run Design Optimization (Sweep 1000 Wings)"):
-            with st.spinner("Simulating 1000 aerodynamic designs..."):
+            with st.spinner("Solving 1000 ODEs using the calibrated model..."):
                 best_wing_id = 0
                 best_x_tr = 0
+                base_x_tr = 0.45
                 
-                # سنجرب 1000 شكل هندسي مختلف (يمثلون تغيراً في تدرج الضغط)
+                # نستخدم المعاملات المعايرة من بياناتك
+                beta_0_cal = st.session_state.b0_cal
+                beta_VS_cal = st.session_state.bvs_cal
+                
+                # سنجرب 1000 شكل هندسي (من تدرج ضغط قاسي إلى ناعم)
                 for wing_id in range(1, 1001):
-                    # 1. كل تصميم يغير من تدرج الضغط، مما يغير معامل النمو الفعال
-                    pressure_gradient_factor = wing_id / 1000.0 
+                    # تغيير معدل النمو (gamma) بناءً على شكل الجناح
+                    # Wing 1 لديه تدرج ضغط عكسي قوي (ينمو بسرعة)، Wing 1000 لديه تدرج ناعم
+                    gamma_wing = 2.0 - (1.5 * (wing_id / 1000.0))
                     
-                    # 2. معادلة فيزيائية: معدل النمو يزيد مع تدرج الضغط العكسي
-                    effective_beta = st.session_state.b0_cal * (0.5 + pressure_gradient_factor)
+                    # 1. حل المعادلة التفاضلية الحقيقية لهذا التصميم
+                    temp_model = GLVorticityModel(gamma=gamma_wing, beta_0=beta_0_cal, beta_VS=beta_VS_cal)
+                    t_arr, A_arr, _ = temp_model.solve(t_span=(0, 15), A0=0.1, omega0=0.5)
                     
-                    # 3. حساب موقع الانتقال بناءً على النموذج الرياضي
-                    x_tr = 0.3 + (0.5 / (effective_beta + 1e-6))
+                    # 2. إيجاد القيمة الحرجة للسعة بناءً على الأرقام المعايرة
+                    A_crit = np.sqrt(gamma_wing / beta_0_cal) * 0.9
                     
-                    # 4. قيود فيزيائية: لا يمكن أن يتجاوز وتر الجناح
-                    x_tr = min(max(x_tr, 0.1), 0.95)
+                    # 3. متى يصل هذا الجناح إلى حالة الانتقال؟
+                    idx = np.where(A_arr >= A_crit)[0]
+                    if len(idx) > 0:
+                        t_tr = t_arr[idx[0]]
+                    else:
+                        t_tr = 15.0 # إذا لم يصل، فهو أفضل تصميم
+                        
+                    # تحويل الزمن إلى مسافة على الوتر (x/c)
+                    x_tr_wing = (t_tr / 15.0) * 0.95
                     
                     # تحديث أفضل تصميم
-                    if x_tr > best_x_tr:
-                        best_x_tr = x_tr
+                    if x_tr_wing > best_x_tr:
+                        best_x_tr = x_tr_wing
                         best_wing_id = wing_id
                 
-                # حساب توفير الوقود بناءً على الفيزياء
-                base_x_tr = 0.45 
+                # حساب توفير الوقود
                 fuel_saving = (best_x_tr - base_x_tr) * 100 * 0.2
-                if fuel_saving < 0: 
-                    fuel_saving = 0 
+                if fuel_saving < 0: fuel_saving = 0 
                 
                 st.success(f"🎯 **Optimal Design Found: Wing #{best_wing_id}**")
                 
@@ -168,4 +176,4 @@ with tab2:
                 col_opt2.metric("Estimated Fuel Saving", f"{fuel_saving:.1f}%")
                 col_opt3.metric("Surrogate Model Speed", "< 0.1 ms/eval")
                 
-                st.balloons() 
+                st.balloons()            

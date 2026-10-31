@@ -10,6 +10,9 @@ $$\beta(\omega) = \beta_0 + \beta_{VS}|\omega|^2$$
 
 This dashboard bridges the high-performance simulation backend with an automated **Data Ingestion & Calibration Engine**, allowing aerospace engineers and medical researchers to upload empirical databases (e.g., NACA 0012 wind tunnel logs or blood viscosity charts) and automatically calibrate physics-based constants using least-squares curve fitting.
 
+### ⚠️ Note on Deployment
+This Streamlit application is a simple, preliminary prototype designed to demonstrate the user interface and the 0D mathematical coupling. The full 3D WENO5 numerical solver is highly computationally intensive. Therefore, we will integrate the full solver and deploy it using larger-scale computational machines in the future.
+
 ## 🚀 Features
 - **Theoretical Simulation Panel:** Real-time generation of Tollmien–Schlichting wave amplitude profiles and exact analytical benchmarks.
 - **Generic Data Ingestion:** Drag-and-drop CSV/Excel database loader.

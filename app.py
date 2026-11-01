@@ -37,11 +37,6 @@ with st.expander("Governing equation", expanded=True):
     F(t)
     """)
 
-    st.write(
-        "The uploaded vorticity history is treated as prescribed input. "
-        "The optimizer estimates the parameters by repeatedly integrating "
-        "this governing ODE and comparing its solution with the measured amplitude."
-    )
     st.markdown(
         "The uploaded vorticity history is treated as prescribed input. "
         "The optimizer estimates the parameters by repeatedly integrating "
